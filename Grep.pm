@@ -2,26 +2,13 @@
 
 package File::Grep;
 
-#=============================================================================
-#
-# $Id: Grep.pm,v 0.01 2002/01/26 02:32:57 mneylon Exp $
-# $Revision: 0.01 $
-# $Author: mneylon $
-# $Date: 2002/01/26 02:32:57 $
-# $Log: Grep.pm,v $
-# Revision 0.01  2002/01/26 02:32:57  mneylon
-# Initial Release
-#
-#
-#=============================================================================
-
 use strict;
 use Carp;
 
 BEGIN {
   use Exporter   ();
   use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-  $VERSION     = sprintf( "%d.%02d", q( $Revision: 0.01 $ ) =~ /\s(\d+)\.(\d+)/ );
+  $VERSION     = sprintf( "%d.%02d", q( $Revision: 0.02 $ ) =~ /\s(\d+)\.(\d+)/ );
   @ISA         = qw(Exporter);
   @EXPORT      = qw();
   @EXPORT_OK   = qw( fgrep fmap fdo );
@@ -58,12 +45,9 @@ sub _fgrep_process {
     }
     my $line;
     eval { $line = <$fh> };
-    if ( $! || $@ ) {
-      if ( $@ ) {
-	!$SILENT and carp "Cannot use file '$file' for fgrep: $@";
-      } else {
-	!$SILENT and carp "Cannot use file '$file' for fgrep: $!";
-      }
+    # Fix for perl5.8 - thanks to Benjamin Kram
+    if ( $@ ) {
+      !$SILENT and carp "Cannot use file '$file' for fgrep: $@";
       last;
     } else {
       while ( defined( $line ) ) {

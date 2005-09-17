@@ -1,25 +1,11 @@
 #!/usr/bin/perl -w
 
-#=============================================================================
-#
-# $Id: grep.t,v 0.01 2002/01/26 02:33:04 mneylon Exp $
-# $Revision: 0.01 $
-# $Author: mneylon $
-# $Date: 2002/01/26 02:33:04 $
-# $Log: grep.t,v $
-# Revision 0.01  2002/01/26 02:33:04  mneylon
-# Initial Release
-#
-#
-#=============================================================================
-
 use File::Grep qw( fgrep fmap fdo );
 use Test::More tests=>11;
 
 my @files = qw( t/test.txt t/test2.txt );
 
 # Void context:
-
 if ( fgrep { /Bob/ } @files ) {
 	pass "Void context";
 } else {
