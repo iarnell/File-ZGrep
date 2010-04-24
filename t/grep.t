@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-use File::Grep qw( fgrep fmap fdo );
+use File::ZGrep qw( fgrep fmap fdo );
 use Test::More tests=>11;
 
 my @files = qw( t/test.txt t/test2.txt );

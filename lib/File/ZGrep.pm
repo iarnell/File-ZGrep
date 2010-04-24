@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-package File::Grep;
+package File::ZGrep;
 
 use strict;
 use Carp;
@@ -175,12 +175,12 @@ __END__
 
 =head1 NAME
 
-File::Grep - Find matches to a pattern in a series of files and related
+File::ZGrep - Find matches to a pattern in a series of files and related
              functions
 
 =head1 SYNOPSIS
 
-  use File::Grep qw( fgrep fmap fdo );
+  use File::ZGrep qw( fgrep fmap fdo );
   
   # Void context
   if ( fgrep { /$user/ } "/etc/passwd" ) { do_something(); }
@@ -211,7 +211,7 @@ File::Grep - Find matches to a pattern in a series of files and related
 
 =head1 DESCRIPTION
 
-File::Grep mimics the functionality of the grep function in perl, but
+File::ZGrep mimics the functionality of the grep function in perl, but
 applying it to files instead of a list.  This is similar in nature to 
 the UNIX grep command, but more powerful as the pattern can be any legal
 perl function. 
@@ -240,7 +240,7 @@ The LIST can contain either scalars or filehandle (or filehandle-like
 objects).  If the item is a scalar, it will be attempted to be opened 
 and read in as normal.  Otherwise it will be treated as a filehandle.  
 Any errors resulting from IO may be reported to STDERR by setting the 
-class variable, $File::Grep::SILENT to false; otherwise, no error
+class variable, $File::ZGrep::SILENT to false; otherwise, no error
 indication is given.
 
 =item fmap BLOCK LIST
