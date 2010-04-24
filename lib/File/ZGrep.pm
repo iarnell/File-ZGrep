@@ -1,14 +1,15 @@
-#!/usr/bin/perl -w
-
 package File::ZGrep;
 
+# ABSTRACT:  Find matches to a pattern in a series of files and related functions
+
 use strict;
+use warnings;
 use Carp;
 
 BEGIN {
   use Exporter   ();
   use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-  $VERSION     = sprintf( "%d.%02d", q( $Revision: 0.02 $ ) =~ /\s(\d+)\.(\d+)/ );
+  $VERSION     = 0.03;
   @ISA         = qw(Exporter);
   @EXPORT      = qw();
   @EXPORT_OK   = qw( fgrep fmap fdo );

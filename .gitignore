@@ -1,0 +1,14 @@
+META.yml
+blib*
+Makefile
+Makefile.old
+Build
+_build*
+pm_to_blib*
+*.tar.gz
+.lwpcookies
+File-ZGrep-*
+cover_db
+*.orig
+*~
+inc/*

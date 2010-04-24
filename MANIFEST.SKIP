@@ -1,0 +1,16 @@
+File-ZGrep*
+
+# Makemaker generated files and dirs.
+^MANIFEST\.
+^Makefile$
+^blib/
+^MakeMaker-\d
+^.git
+^pm_to_blib
+
+# Temp, old and emacs backup files.
+~$
+\.old$
+\.orig$
+^#.*#$
+^\.#
