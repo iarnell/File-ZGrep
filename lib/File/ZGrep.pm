@@ -7,168 +7,175 @@ use warnings;
 use Carp;
 
 BEGIN {
-  use Exporter   ();
-  use vars       qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
-  $VERSION     = 0.03;
-  @ISA         = qw(Exporter);
-  @EXPORT      = qw();
-  @EXPORT_OK   = qw( fgrep fmap fdo );
-  %EXPORT_TAGS = (  );
+    use Exporter ();
+    use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
+    $VERSION     = 0.03;
+    @ISA         = qw(Exporter);
+    @EXPORT      = qw();
+    @EXPORT_OK   = qw( fgrep fmap fdo );
+    %EXPORT_TAGS = ();
 }
 
 # Remain silent on bad files, else shoutout.
 our $SILENT = 1;
 
-# Internal function; does the actual walk through the files, and calls 
+# Internal function; does the actual walk through the files, and calls
 # out to the coderef to do the work for each line.  This gives me a bit
 # more flexibility with the end interface
 
 sub _fgrep_process {
-  my ( $closure, @files ) = @_;
-  my $openfile = 0;
-  my $abort = 0;
-  my $i = 0;
-  foreach my $file ( @files ) {
-    my $fh;
-    if ( UNIVERSAL::isa( \$file, "SCALAR" ) ) {
-      # If it's a scalar, assume it's a file and open it
-      open FILE, "$file" or 
-	( !$SILENT and carp "Cannot open file '$file' for fgrep: $!" ) 
-	  and next;
-      $fh = \*FILE;
-      $openfile = 1;
-    } else {
-      # Otherwise, we will assume it's a legit filehandle.  
-      # If something's
-      # amiss, we'll catch it at <> below.
-      $fh = $file;
-      $openfile = 0;
+    my ( $closure, @files ) = @_;
+    my $openfile = 0;
+    my $abort    = 0;
+    my $i        = 0;
+    foreach my $file (@files) {
+        my $fh;
+        if ( UNIVERSAL::isa( \$file, "SCALAR" ) ) {
+
+            # If it's a scalar, assume it's a file and open it
+            open FILE, "$file"
+              or ( !$SILENT and carp "Cannot open file '$file' for fgrep: $!" )
+              and next;
+            $fh       = \*FILE;
+            $openfile = 1;
+        }
+        else {
+
+            # Otherwise, we will assume it's a legit filehandle.
+            # If something's
+            # amiss, we'll catch it at <> below.
+            $fh       = $file;
+            $openfile = 0;
+        }
+        my $line;
+        eval { $line = <$fh> };
+
+        # Fix for perl5.8 - thanks to Benjamin Kram
+        if ($@) {
+            !$SILENT and carp "Cannot use file '$file' for fgrep: $@";
+            last;
+        }
+        else {
+            while ( defined($line) ) {
+                my $state = &$closure( $i, $., $line );
+                if ( $state < 0 ) {
+
+                    # If need to shut down whole process...
+                    $abort = 1;
+                    last;    # while!
+                }
+                elsif ( $state == 0 ) {
+
+                    # If need to shut down just this file...
+                    $abort = 0;
+                    last;    # while!
+                }
+                $line = <$fh>;
+            }
+        }
+        if ($openfile) { close $fh; }
+        last if ($abort);    # Fileloop...
+        $i++;                # Increment counter
     }
-    my $line;
-    eval { $line = <$fh> };
-    # Fix for perl5.8 - thanks to Benjamin Kram
-    if ( $@ ) {
-      !$SILENT and carp "Cannot use file '$file' for fgrep: $@";
-      last;
-    } else {
-      while ( defined( $line ) ) {
-	my $state = &$closure( $i, $., $line );
-	if ( $state < 0 ) { 
-	  # If need to shut down whole process...
-	  $abort = 1;
-	  last; # while!
-	} elsif ( $state == 0 ) {
-	  # If need to shut down just this file...
-	  $abort = 0;
-	  last; # while!
-	}
-	$line = <$fh>;
-      }
-    }
-    if ( $openfile ) { close $fh; }
-    last if ( $abort );  # Fileloop...
-    $i++; # Increment counter
-  }
-  return;
+    return;
 }
 
 sub fgrep (&@) {
-  my ( $coderef, @files ) = @_;
-  if ( wantarray ) {
-    my @matches = map { { filename => $_,
-			 count => 0,
-			   matches => { } } } @files;
-    my $sub = sub { 
-      my ( $file, $pos, $line ) = @_;
-      local $_ = $line;
-      if ( &$coderef( $file, $pos, $_ ) ) { 
-	$matches[$file]->{ count }++;
-	$matches[$file]->{ matches }->{ $pos } = $line;
-      } 
-      return 1;
-    };
+    my ( $coderef, @files ) = @_;
+    if (wantarray) {
+        my @matches =
+          map { { filename => $_, count => 0, matches => {} } } @files;
+        my $sub = sub {
+            my ( $file, $pos, $line ) = @_;
+            local $_ = $line;
+            if ( &$coderef( $file, $pos, $_ ) ) {
+                $matches[$file]->{count}++;
+                $matches[$file]->{matches}->{$pos} = $line;
+            }
+            return 1;
+        };
 
-    _fgrep_process( $sub, @files );
-    return @matches;
+        _fgrep_process( $sub, @files );
+        return @matches;
 
-  } elsif ( defined( wantarray ) ) {
-    my $count = 0;
-    my $sub = sub {
-      my ( $file, $pos, $line ) = @_;
-      local $_ = $line;
-      if ( &$coderef( $file, $pos, $_ ) ) { $count++ };
-      return 1;
-    };
-    
-    _fgrep_process( $sub, @files );
-    return $count;
-  } else {
-    my $found = 0;
-    my $sub = sub {
-      my ( $file, $pos, $line ) = @_;
-      local $_ = $line;
-      if ( &$coderef( $file, $pos, $_ ) ) 
-	{ $found=1; return -1; } 
-      else 
-	{ return 1; }
-    };
-    _fgrep_process( $sub, @files );
-    return $found;
-  }
+    }
+    elsif ( defined(wantarray) ) {
+        my $count = 0;
+        my $sub   = sub {
+            my ( $file, $pos, $line ) = @_;
+            local $_ = $line;
+            if ( &$coderef( $file, $pos, $_ ) ) { $count++ }
+            return 1;
+        };
+
+        _fgrep_process( $sub, @files );
+        return $count;
+    }
+    else {
+        my $found = 0;
+        my $sub   = sub {
+            my ( $file, $pos, $line ) = @_;
+            local $_ = $line;
+            if ( &$coderef( $file, $pos, $_ ) ) { $found = 1; return -1; }
+            else                                { return 1; }
+        };
+        _fgrep_process( $sub, @files );
+        return $found;
+    }
 }
 
 sub fgrep_flat (&@) {
-  my ( $coderef, @files ) = @_;
-  my @matches;
-  my $sub = sub {
-    my ( $file, $pos, $line ) = @_;
-    local $_ = $line;
-    if ( &$coderef( $file, $pos, $_ ) ) {
-      push @matches, $line;
-      return 1;
-    }
-  };
-  _fgrep_process( $sub, @files );
-  return @matches;
+    my ( $coderef, @files ) = @_;
+    my @matches;
+    my $sub = sub {
+        my ( $file, $pos, $line ) = @_;
+        local $_ = $line;
+        if ( &$coderef( $file, $pos, $_ ) ) {
+            push @matches, $line;
+            return 1;
+        }
+    };
+    _fgrep_process( $sub, @files );
+    return @matches;
 }
 
 sub fgrep_into ( &$@ ) {
-  my ( $coderef, $arrayref, @files ) = @_;
-  my $sub = sub {
-    my ( $file, $pos, $line ) = @_;
-    local $_ = $line;
-    if ( &$coderef( $file, $pos, $_ ) ) {
-      push @$arrayref, $line;
-      return 1;
-    }
-  };
-  _fgrep_process( $sub, @files );
-  return $arrayref;
+    my ( $coderef, $arrayref, @files ) = @_;
+    my $sub = sub {
+        my ( $file, $pos, $line ) = @_;
+        local $_ = $line;
+        if ( &$coderef( $file, $pos, $_ ) ) {
+            push @$arrayref, $line;
+            return 1;
+        }
+    };
+    _fgrep_process( $sub, @files );
+    return $arrayref;
 }
 
 sub fmap (&@) {
-  my ( $mapper, @files ) = @_;
+    my ( $mapper, @files ) = @_;
 
-  my @mapped;
-  my $sub = sub {
-    my ( $file, $pos, $line ) = @_;
-    local $_ = $line;
-    push @mapped, &$mapper( $file, $pos, $_ );
-    return 1;
-  };
-  _fgrep_process( $sub, @files );
-  return @mapped;
+    my @mapped;
+    my $sub = sub {
+        my ( $file, $pos, $line ) = @_;
+        local $_ = $line;
+        push @mapped, &$mapper( $file, $pos, $_ );
+        return 1;
+    };
+    _fgrep_process( $sub, @files );
+    return @mapped;
 }
 
 sub fdo (&@) {
-  my ( $doer, @files ) = @_;
-  my $sub = sub {
-    my ( $file, $pos, $line ) = @_;
-    local $_ = $line;
-    &$doer( $file, $pos, $_ );
-    return 1;
-  };
-  _fgrep_process( $sub, @files );
+    my ( $doer, @files ) = @_;
+    my $sub = sub {
+        my ( $file, $pos, $line ) = @_;
+        local $_ = $line;
+        &$doer( $file, $pos, $_ );
+        return 1;
+    };
+    _fgrep_process( $sub, @files );
 }
 
 1;
