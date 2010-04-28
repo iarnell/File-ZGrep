@@ -5,6 +5,7 @@ package File::ZGrep;
 use strict;
 use warnings;
 use Carp;
+use IO::Uncompress::AnyUncompress;
 
 BEGIN {
     use Exporter ();
@@ -33,13 +34,11 @@ sub _fgrep_process {
         if ( UNIVERSAL::isa( \$file, "SCALAR" ) ) {
 
             # If it's a scalar, assume it's a file and open it
-            open FILE, "$file"
+            $fh = IO::Uncompress::AnyUncompress->new($file)
               or ( !$SILENT and carp "Cannot open file '$file' for fgrep: $!" )
               and next;
-            $fh       = \*FILE;
             $openfile = 1;
-        }
-        else {
+        } else {
 
             # Otherwise, we will assume it's a legit filehandle.
             # If something's
@@ -54,8 +53,7 @@ sub _fgrep_process {
         if ($@) {
             !$SILENT and carp "Cannot use file '$file' for fgrep: $@";
             last;
-        }
-        else {
+        } else {
             while ( defined($line) ) {
                 my $state = &$closure( $i, $., $line );
                 if ( $state < 0 ) {
@@ -63,8 +61,7 @@ sub _fgrep_process {
                     # If need to shut down whole process...
                     $abort = 1;
                     last;    # while!
-                }
-                elsif ( $state == 0 ) {
+                } elsif ( $state == 0 ) {
 
                     # If need to shut down just this file...
                     $abort = 0;
@@ -98,8 +95,7 @@ sub fgrep (&@) {
         _fgrep_process( $sub, @files );
         return @matches;
 
-    }
-    elsif ( defined(wantarray) ) {
+    } elsif ( defined(wantarray) ) {
         my $count = 0;
         my $sub   = sub {
             my ( $file, $pos, $line ) = @_;
@@ -110,8 +106,7 @@ sub fgrep (&@) {
 
         _fgrep_process( $sub, @files );
         return $count;
-    }
-    else {
+    } else {
         my $found = 0;
         my $sub   = sub {
             my ( $file, $pos, $line ) = @_;
