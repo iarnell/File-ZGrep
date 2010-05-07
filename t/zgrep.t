@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 use File::ZGrep qw( fgrep fmap fdo );
-use Test::More tests=>11;
+use Test::More tests=>12;
 
 my @files = qw( t/test.txt.gz t/test2.txt.bz2 );
 
